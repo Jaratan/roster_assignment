@@ -1,0 +1,21 @@
+<?php
+
+namespace App\Models;
+
+use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Model;
+
+class TrustedClient extends Model
+{
+    use HasFactory;
+
+    protected $fillable = [
+        'talent_profile_id',
+        'name'
+    ];
+
+    public function talentProfile()
+    {
+        return $this->belongsTo(TalentProfile::class);
+    }
+}
