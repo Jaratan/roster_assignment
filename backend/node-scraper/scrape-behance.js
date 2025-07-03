@@ -63,4 +63,4 @@ async function autoScroll(page) {
   } finally {
     await browser.close();
   }
-})();
+})(); 
