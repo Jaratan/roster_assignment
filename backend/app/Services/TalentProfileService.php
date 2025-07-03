@@ -11,6 +11,7 @@ use App\Models\Expertise;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\DB;
 use App\Helpers\HttpHelper;
+use Symfony\Component\Panther\Client;
 
 class TalentProfileService
 {
@@ -23,10 +24,61 @@ class TalentProfileService
     /**
      * Process portfolio by scraping, parsing, and saving it.
      */
+    public function getYTPlaylist(string $url)
+    {
+        parse_str(parse_url($url, PHP_URL_QUERY), $params);
+        $playlistId = $params['list'] ?? null;
+
+        $apiKey = config('services.youtube.api_key');
+        $url = config('services.youtube.endpoint');
+        
+        $response = Http::get($url, [
+            'part' => 'snippet',
+            'maxResults' => 25,
+            'playlistId' => $playlistId,
+            'key' => $apiKey,
+        ]);
+        dd($response['items']);
+        return collect($response['items'])->map(function ($item) {
+            $snippet = $item['snippet'];
+            return [
+                'title' => $snippet['title'],
+                'description' => $snippet['description'],
+                'video_url' => 'https://www.youtube.com/watch?v=' . $snippet['resourceId']['videoId'],
+                'thumbnail_url' => $snippet['thumbnails']['medium']['url'] ?? null
+            ];
+        });
+    }
+
     public function processPortfolio(string $url, string $username)
     {
-        $html = HttpHelper::fetchHtml($url);
+        $escapedInput = escapeshellarg($url);
+        $scriptPath = base_path('node-scraper/scrape-behance.js');
 
+        try {
+            $output = shell_exec("node {$scriptPath} {$escapedInput}");
+            $projects = json_decode($output, true);
+            if (json_last_error() !== JSON_ERROR_NONE) {
+                return response()->json(['error' => 'Invalid JSON from scraper'], 500);
+            }
+            $projects = collect($projects)  // ⬅️ Convert to collection
+                ->groupBy('url')
+                ->map(function ($group) {
+                    return $group->first(fn ($item) => !empty($item['title']) || !empty($item['image'])) ?? $group->first();
+                })
+                ->values(); // Reset indexes
+
+            return response()->json([
+                'message' => 'Profile ingested successfully.',
+                'count' => $projects->count(),
+                'projects' => $projects,
+            ]);
+        } catch (\Exception $e) {
+            return response()->json(['error' => 'Scraper failed: ' . $e->getMessage()], 500);
+        }
+        //old script
+        $html = HttpHelper::fetchHtml($url);
+        
         if (!$html) {
             throw new \Exception("Failed to fetch HTML from the URL.");
         }

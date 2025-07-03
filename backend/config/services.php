@@ -37,5 +37,15 @@ return [
         'api_key' => env('COHERE_API_KEY'),
         'endpoint' => 'https://api.cohere.ai/v1/embed',
     ],
+    'youtube' => [
+        'api_key' => env('YOUTUBE_API_KEY'),
+        'endpoint' => 'https://www.googleapis.com/youtube/v3/playlistItems',
+    ],
+    'panther' => [
+        'chrome_path' => env('PANTHER_CHROME_BINARY'),
+    ],
+    'vimeo' => [
+        'token' => env('VIMEO_ACCESS_TOKEN'),
+    ],
 
 ];

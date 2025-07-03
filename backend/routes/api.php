@@ -24,7 +24,8 @@ RateLimiter::for('api', function (Request $request) {
 });
 
 Route::middleware(['apikey'])->prefix('talent')->group(function () {
-    Route::post('/ingest', [TalentProfileController::class, 'store']); // Ingest a new talent profile
+    // Route::post('/ingest', [TalentProfileController::class, 'store']); // Ingest a new talent profile
+    Route::post('/ingest', [TalentProfileController::class, 'ingestPortfolio']); // Ingest a new talent profile
     Route::get('/{id}', [TalentProfileController::class, 'show']); // Retrieve a talent profile by ID
     Route::put('/{id}', [TalentProfileController::class, 'update']); // Update name and description of an existing talent profile 
     Route::delete('/{id}', [TalentProfileController::class, 'destroy']); // Delete a talent profile by ID

@@ -6,6 +6,7 @@ use Illuminate\Http\Request;
 use App\Http\Controllers\Controller;
 use App\Services\TalentProfileService;
 use Validator;
+use App\Services\Portfolio\PortfolioServiceResolver;
 
 class TalentProfileController extends Controller
 {
@@ -37,8 +38,7 @@ class TalentProfileController extends Controller
             );
 
             return response()->json([
-                'message' => 'Profile ingested successfully.',
-                'data' => $profile->load(['trustedClients', 'myWorks.videos', 'testimonials', 'expertises'])
+                'data' => $profile
             ], 201);
 
         } catch (\Exception $e) {
@@ -90,5 +90,35 @@ class TalentProfileController extends Controller
         $deleted = $this->talentProfileService->deleteById($id);
         return $deleted;
         
+    }
+
+    public function getYTPlaylist(Request $request) {
+        $data = $this->talentProfileService->getYTPlaylist($request->input('url'));
+        return $data;
+    }
+
+    public function ingestPortfolio(Request $request, PortfolioServiceResolver $resolver)
+    {
+        $url = $request->input('url');
+        $limit = $request->input('limit', 10);
+        //add validation for params
+        $validator = Validator::make($request->all(), [
+            'url' => 'required|url',
+            'limit' => 'integer|min:1|max:100'
+        ]);
+        if ($validator->fails()) {
+            return response()->json([
+                'status' => 'error',
+                'errors' => $validator->errors()
+            ], 422);
+        }
+        try {
+            $service = $resolver->resolve($url);
+            $projects = $service->fetchProjects($url, $limit);
+
+            return $projects;
+        } catch (\Exception $e) {
+            return response()->json(['error' => $e->getMessage()], 400);
+        }
     }
 }
